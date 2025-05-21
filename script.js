@@ -1,75 +1,78 @@
-let index = 0;
-const images = document.querySelectorAll(.slides img);
-let zoomLevel = 1;
-let hideControlsTimer = null;
+let currentSlide = 0;
+const slides = document.querySelectorAll('.slide');
+const rotateNotice = document.getElementById('rotate-notice');
 
- نمایش اسلاید مشخص
-function showSlide(i) {
-  images.forEach((img, idx) = {
-    img.style.display = idx === i  block  none;
-    img.style.transform = scale(1);
+function showSlide(index) {
+  slides.forEach((s, i) => {
+    s.classList.toggle('active', i === index);
   });
-  zoomLevel = 1;
 }
 
- اسلاید بعدی
 function nextSlide() {
-  index = (index + 1) % images.length;
-  showSlide(index);
+  currentSlide = (currentSlide + 1) % slides.length;
+  showSlide(currentSlide);
 }
 
- اسلاید قبلی
 function prevSlide() {
-  index = (index - 1 + images.length) % images.length;
-  showSlide(index);
+  currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+  showSlide(currentSlide);
 }
 
- فعالغیرفعال کردن تمام‌صفحه
 function toggleFullscreen() {
-  const elem = document.documentElement;
   if (!document.fullscreenElement) {
-    elem.requestFullscreen().catch(err =
-      console.error(Fullscreen failed, err)
-    );
+    document.documentElement.requestFullscreen();
   } else {
     document.exitFullscreen();
   }
 }
 
- خروج از حالت تمام‌صفحه با Escape
-document.addEventListener(keydown, (event) = {
-  if (event.key === Escape && document.fullscreenElement) {
-    document.exitFullscreen();
-  }
-});
+let scale = 1;
 
- گرفتن تصویر فعال
-function getCurrentImage() {
-  return images[index];
-}
-
- زوم این
 function zoomIn() {
-  zoomLevel = Math.min(zoomLevel + 0.2, 2);
-  getCurrentImage().style.transform = `scale(${zoomLevel})`;
+  if (scale < 2) {
+    scale += 0.1;
+    applyZoom();
+  }
 }
 
- زوم اوت
 function zoomOut() {
-  zoomLevel = Math.max(zoomLevel - 0.2, 1);
-  getCurrentImage().style.transform = `scale(${zoomLevel})`;
+  if (scale > 0.5) {
+    scale -= 0.1;
+    applyZoom();
+  }
 }
 
- نمایش کنترل‌ها با حرکت موس
-function showControlsTemporarily() {
-  document.body.classList.add(visible-controls);
-  if (hideControlsTimer) clearTimeout(hideControlsTimer);
-  hideControlsTimer = setTimeout(() = {
-    document.body.classList.remove(visible-controls);
-  }, 3000);  بعد از ۳ ثانیه مخفی می‌شود
+function applyZoom() {
+  slides.forEach(slide => {
+    slide.style.transform = `scale(${scale})`;
+    slide.style.transformOrigin = 'center center';
+  });
 }
 
-document.addEventListener(mousemove, showControlsTemporarily);
+// ✨ جلوگیری از زوم دو انگشت
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
 
- نمایش اسلاید اول هنگام بارگذاری
-showSlide(index);
+// ✨ شناسایی آیفون و چرخش صفحه
+function isIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function checkOrientation() {
+  if (isIOS() && window.innerHeight > window.innerWidth) {
+    rotateNotice.classList.remove('hidden');
+  } else {
+    rotateNotice.classList.add('hidden');
+  }
+}
+
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+window.addEventListener('load', () => {
+  checkOrientation();
+  showSlide(currentSlide);
+});
